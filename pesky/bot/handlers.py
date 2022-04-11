@@ -13,7 +13,9 @@ LOG = infra.get_logger(__name__)
 @dp.message_handler(commands='start')
 async def cmd_start(message: types.Message) -> None:
     """Greet user for the first time."""
-    await message.answer(messages.MSG_START)
+    await message.answer(messages.MSG_START.format(
+        username=message.from_user.first_name,
+    ))
 
 
 @dp.message_handler(commands='help')
