@@ -13,12 +13,13 @@ LOG = infra.get_logger(__name__)
 @dp.message_handler(commands='start')
 async def cmd_start(message: types.Message) -> None:
     """Greet user for the first time."""
-    await message.reply(messages.MSG_START)
+    await message.answer(messages.MSG_START)
 
 
-@dp.message_handler(commands='test1')
-async def cmd_test1(message: types.Message):
-    await message.reply('Test 1')
+@dp.message_handler(commands='help')
+async def cmd_help(message: types.Message):
+    """Show list on known operations."""
+    await message.answer(messages.MSG_HELP)
 
 
 @dp.errors_handler(exception=exceptions.BotBlocked)
