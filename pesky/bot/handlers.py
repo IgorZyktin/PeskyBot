@@ -5,16 +5,18 @@ from aiogram import types
 from aiogram.utils import exceptions
 
 from pesky import messages, infra
-from pesky.bot.dependencies import dp
+from pesky.bot.dependencies import dp, user_middleware
+from pesky.domain import models
 
 LOG = infra.get_logger(__name__)
 
 
 @dp.message_handler(commands='start')
-async def cmd_start(message: types.Message) -> None:
+@user_middleware
+async def cmd_start(user: models.User, message: types.Message) -> None:
     """Greet user for the first time."""
     await message.answer(messages.MSG_START.format(
-        username=message.from_user.first_name,
+        username=user.first_name,
     ))
 
 
