@@ -17,3 +17,14 @@ class AbstractDatabase(abc.ABC):
     @abc.abstractmethod
     async def register_user(self, user: models.User) -> models.User:
         """Save new user to the database."""
+
+    @abc.abstractmethod
+    async def get_categories(self, user: models.User) -> list[models.Category]:
+        """Try loading categories for user."""
+
+    async def create_category(
+            self,
+            user: models.User,
+            category: models.Category,
+    ) -> models.Category:
+        """Create new category."""

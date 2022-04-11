@@ -21,6 +21,7 @@ class Database(AbstractDatabase):
         except FileNotFoundError:
             data = {
                 'users': {},
+                'categories': {},
             }
         return data
 
@@ -43,5 +44,41 @@ class Database(AbstractDatabase):
             'sid': user.sid,
             'first_name': user.first_name,
         })
+        data['categories'].setdefault(user.sid, {})
         self._write(data)
         return user
+
+    async def get_categories(self, user: models.User) -> list[models.Category]:
+        """Try loading categories for user."""
+        data = self._read()
+
+        raw = data['categories'].get(user.sid)
+
+        if raw is None:
+            return []
+
+        categories = [
+            models.Category(**x)
+            for x in raw.values()
+        ]
+
+        return categories
+
+    async def create_category(
+            self,
+            user: models.User,
+            category: models.Category,
+    ) -> models.Category:
+        """Create new category."""
+        data = self._read()
+
+        categories = data['categories'].setdefault(user.sid, {})
+        category_id = str(len(categories) + 1)
+        categories[category_id] = {
+            'id': category_id,
+            'name': category.name,
+        }
+
+        category.id = category_id
+        self._write(data)
+        return category

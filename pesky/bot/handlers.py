@@ -24,13 +24,13 @@ async def cmd_start(
     """Greet user for the first time."""
     await operations.maybe_register_user(database, user)
     await message.answer(messages.MSG_START.format(
-        username=user.first_name,
+        first_name=user.first_name,
     ))
 
 
 @dp.message_handler(commands='help')
 async def cmd_help(message: types.Message):
-    """Show list on known operations."""
+    """Show list of known operations."""
     await message.answer(messages.MSG_HELP)
 
 
