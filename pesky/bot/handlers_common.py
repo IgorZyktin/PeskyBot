@@ -36,6 +36,22 @@ async def cmd_start(
     await message.answer(output)
 
 
+@dp.message_handler(commands='help')
+async def cmd_help(message: types.Message):
+    """Show list of known operations."""
+    output = (
+        'Я знаю следующие команды:\n'
+        '/start - показать приветствие\n'
+        '---\n'
+        '/list_categories - показать известные категории\n'
+        '/new_category - создать новую категорию\n'
+        '/drop_category - удалить категорию\n'
+        '---\n'
+        '/help - показать справку'
+    )
+    await message.answer(output)
+
+
 @dp.errors_handler(exception=exceptions.BotBlocked)
 async def error_bot_blocked(update: types.Update,
                             exception: exceptions.BotBlocked):
