@@ -13,32 +13,6 @@ from pesky.storage.database.database import Database
 LOG = infra.get_logger(__name__)
 
 
-@dp.message_handler(commands='categories')
-@user_middleware
-@database_middleware
-async def cmd_categories(
-        message: types.Message,
-        user: models.User,
-        database: Database,
-) -> None:
-    """Show list of known categories."""
-    categories = await database.get_categories(user)
-
-    if categories:
-        points = []
-
-        for i, category in enumerate(categories, start=1):
-            points.append(f'{i}. {category}')
-
-        text = '\n'.join(points)
-
-    else:
-        text = messages.MSG_NO_CATEGORIES
-
-    text += '\n' + messages.MSG_NEW_CATEGORY_APPENDIX
-    await message.answer(text)
-
-
 class CategoryForm(StatesGroup):
     """Category form."""
     name = State()

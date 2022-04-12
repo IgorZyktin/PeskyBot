@@ -16,17 +16,9 @@ MSG_HELP = (
     '/help - показать справку'
 )
 
-MSG_NO_CATEGORIES = (
-    'Нет ни одной категории.\n'
-    '/new_category - завести первую'
-)
 
 MSG_NEW_CATEGORY = (
     'Как ты хочешь назвать новую категорию?'
-)
-
-MSG_NEW_CATEGORY_APPENDIX = (
-    '/new_category - добавить новую'
 )
 
 MSG_NEW_CATEGORY_TOO_LONG = (
