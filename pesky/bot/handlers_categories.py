@@ -26,7 +26,7 @@ async def cmd_list_categories(
 
     if categories:
         output = (
-            f'У тебя есть {len(categories)} кат.:'
+            f'У тебя есть {len(categories)} кат.:\n'
         )
 
         num = utils.make_num(len(categories))
@@ -35,8 +35,9 @@ async def cmd_list_categories(
             for i, category in enumerate(categories, start=1)
         ]
 
-        output += '\n' + '\n'.join(numbered)
+        output += '\n'.join(numbered)
         output += '\n/new_category - завести новую'
+        output += '\n/drop_category - удалить существующую'
 
     else:
         output = (
@@ -111,6 +112,131 @@ async def cmd_new_category_name_save(
                     user.verbose_name, message.text)
         output += '\n. Я немного изменил название.'
 
+    output += '\n/new_category - завести ещё одну'
+
     await database.create_category(user, category)
     await message.answer(output)
     await state.finish()
+
+
+# =============================================================================
+
+
+class DropCategoryGroup(StatesGroup):
+    """FSM for category deletion."""
+    name = State()
+    confirm = State()
+
+
+@dp.message_handler(commands='drop_category')
+@user_middleware
+@database_middleware
+async def cmd_drop_category(
+        message: types.Message,
+        user: models.User,
+        database: Database,
+) -> None:
+    """Drop existing category."""
+    categories = await database.get_categories(user)
+
+    if categories:
+        output = (
+            f'Выбери категорию, которую хочешь удалить:\n'
+        )
+        await DropCategoryGroup.name.set()
+        keyboard = types.ReplyKeyboardMarkup(
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
+        keyboard.add(*map(str, categories))
+        await message.answer(output, reply_markup=keyboard)
+
+    else:
+        output = (
+            'У тебя нет ни одной категории.\n'
+            '/new_category - завести первую'
+        )
+        await message.answer(output)
+
+
+@dp.message_handler(state=DropCategoryGroup.name)
+@user_middleware
+@database_middleware
+async def cmd_drop_category_start(
+        message: types.Message,
+        state: FSMContext,
+        user: models.User,
+        database: Database,
+) -> None:
+    """Get deletion candidate."""
+    categories = await database.get_categories(user)
+    candidate = message.text
+
+    if candidate not in map(str, categories):
+        output = (
+            'Это не похоже на имя категории. Введи название из списка.'
+        )
+        await message.reply(output)
+        return
+
+    await DropCategoryGroup.next()
+    has_records = await database.category_has_records(user, candidate)
+    if has_records:
+        await DropCategoryGroup.confirm.set()
+        output = (
+            'У этой категории есть записи. '
+            'Они будут удалены вместе с категорией. '
+            'Продолжить?'
+        )
+        keyboard = types.ReplyKeyboardMarkup(
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
+        keyboard.add('Да', 'Нет')
+        await state.update_data(candidate=candidate)
+        await message.answer(output, reply_markup=keyboard)
+        return
+
+    await database.drop_category(user, candidate)
+
+    output = (
+        f'Категория {candidate} удалена'
+    )
+
+    await state.finish()
+    await message.answer(output)
+
+
+@dp.message_handler(state=DropCategoryGroup.confirm)
+@user_middleware
+@database_middleware
+async def cmd_drop_category_confirm(
+        message: types.Message,
+        state: FSMContext,
+        user: models.User,
+        database: Database,
+) -> None:
+    """Confirm deletion of category."""
+    data = await state.get_data()
+    candidate = data['candidate']
+
+    if message.text == 'Да':
+        output = (
+            f'Категория {candidate} удалена'
+        )
+        await state.finish()
+        await database.drop_category(user, candidate)
+        await message.answer(output)
+
+    elif message.text == 'Нет':
+        output = (
+            'Не будем удалять категорию'
+        )
+        await state.finish()
+        await message.answer(output)
+
+    else:
+        output = (
+            'Ну так да или нет?'
+        )
+        await message.answer(output)

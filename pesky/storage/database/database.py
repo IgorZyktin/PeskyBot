@@ -82,3 +82,32 @@ class Database(AbstractDatabase):
         category.id = category_id
         self._write(data)
         return category
+
+    async def category_has_records(
+            self,
+            user: models.User,
+            name: str,
+    ) -> bool:
+        """Return True if category has records."""
+        # TODO
+        return False
+
+    async def drop_category(
+            self,
+            user: models.User,
+            name: str,
+    ) -> None:
+        """Delete category."""
+        data = self._read()
+        key = None
+
+        if user.sid in data['categories']:
+            for cat_id, model in data['categories'][user.sid].items():
+                if model['name'] == name:
+                    key = cat_id
+                    break
+
+            if key is not None:
+                del data['categories'][user.sid][key]
+
+        self._write(data)

@@ -28,3 +28,18 @@ class AbstractDatabase(abc.ABC):
             category: models.Category,
     ) -> models.Category:
         """Create new category."""
+
+    @abc.abstractmethod
+    async def category_has_records(
+            self,
+            user: models.User,
+            name: str,
+    ) -> bool:
+        """Return True if category has records."""
+
+    async def drop_category(
+            self,
+            user: models.User,
+            name: str,
+    ) -> None:
+        """Delete category."""
