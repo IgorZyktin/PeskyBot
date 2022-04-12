@@ -16,6 +16,5 @@ async def maybe_register_user(
     if await database.user_exists(user):
         return False
 
-    LOG.info('Registering new user: %s, %s', user.id, user.first_name)
     await database.register_user(user)
     return True

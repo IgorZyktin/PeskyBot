@@ -14,3 +14,9 @@ def make_num(total: int) -> Callable[[int], str]:
         return prefix.format(number=number)
 
     return num
+
+
+def sanitize_user_input(raw_text: str) -> str:
+    """Clear specific symbols from user input."""
+    # TODO - remove anything code/tags like
+    return raw_text

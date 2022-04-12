@@ -13,6 +13,11 @@ class User(BaseModel):
         """Return string version of id."""
         return str(self.id)
 
+    @property
+    def verbose_name(self) -> str:
+        """Return name with id."""
+        return f'{self.sid}-{self.first_name}'
+
 
 class Category(BaseModel):
     """User activity category."""

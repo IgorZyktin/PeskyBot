@@ -30,6 +30,7 @@ async def cmd_start(
     )
 
     if registered:
+        LOG.info('Registered new user: %s, %s', user.id, user.first_name)
         output += '\nРад знакомству!'
 
     await message.answer(output)
