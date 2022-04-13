@@ -16,6 +16,15 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 database = Database()
 
+DEFAULT_KEYBOARD = types.ReplyKeyboardMarkup(
+    resize_keyboard=True,
+    one_time_keyboard=True,
+)
+
+DEFAULT_KEYBOARD.add(
+    '/Категории',
+)
+
 
 def user_middleware(
         func: Callable[..., Coroutine],

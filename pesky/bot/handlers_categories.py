@@ -6,14 +6,42 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 from pesky import infra, utils
-from pesky.bot.dependencies import dp, user_middleware, database_middleware
+from pesky.bot.dependencies import (
+    dp, user_middleware, database_middleware, DEFAULT_KEYBOARD,
+)
 from pesky.domain import models
 from pesky.storage.database.database import Database
 
 LOG = infra.get_logger(__name__)
 
 
-@dp.message_handler(commands='list_categories')
+@dp.message_handler(commands='Категории')
+async def cmd_categories(message: types.Message) -> None:
+    """Entry point for categories."""
+    keyboard = types.ReplyKeyboardMarkup(
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+    keyboard.add(
+        '/Показать_категории',
+        '/Новая_категория',
+        '/Переименовать_категорию',
+        '/Удалить_категорию',
+        '/Отмена',
+    )
+
+    output = (
+        'Здесь можно настроить категории.'
+    )
+
+    await message.answer(output, reply_markup=keyboard)
+
+
+# =============================================================================
+
+
+@dp.message_handler(commands='Показать_категории')
 @user_middleware
 @database_middleware
 async def cmd_list_categories(
@@ -36,16 +64,13 @@ async def cmd_list_categories(
         ]
 
         output += '\n'.join(numbered)
-        output += '\n/new_category - завести новую'
-        output += '\n/drop_category - удалить существующую'
 
     else:
         output = (
-            'У тебя нет ни одной категории.\n'
-            '/new_category - завести первую'
+            'У тебя нет ни одной категории.'
         )
 
-    await message.answer(output)
+    await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
 
 
 # =============================================================================
@@ -59,7 +84,7 @@ class CreateCategoryGroup(StatesGroup):
 MAX_CATEGORY_NAME_LENGTH = 20
 
 
-@dp.message_handler(commands='new_category')
+@dp.message_handler(commands='Новая_категория')
 async def cmd_new_category(
         message: types.Message,
 ) -> None:
@@ -110,12 +135,10 @@ async def cmd_new_category_name_save(
     if category.name != message.text:
         LOG.warning('User %s entered strange category name: %r',
                     user.verbose_name, message.text)
-        output += '\n. Я немного изменил название.'
-
-    output += '\n/new_category - завести ещё одну'
+        output += ' (немного изменил).'
 
     await database.create_category(user, category)
-    await message.answer(output)
+    await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
     await state.finish()
 
 
@@ -128,7 +151,7 @@ class DropCategoryGroup(StatesGroup):
     confirm = State()
 
 
-@dp.message_handler(commands='drop_category')
+@dp.message_handler(commands='Удалить_категорию')
 @user_middleware
 @database_middleware
 async def cmd_drop_category(
@@ -138,25 +161,25 @@ async def cmd_drop_category(
 ) -> None:
     """Drop existing category."""
     categories = await database.get_categories(user)
+    keyboard = types.ReplyKeyboardMarkup(
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
 
     if categories:
         output = (
-            f'Выбери категорию, которую хочешь удалить:\n'
+            f'Выбери категорию, которую хочешь удалить:'
         )
         await DropCategoryGroup.name.set()
-        keyboard = types.ReplyKeyboardMarkup(
-            resize_keyboard=True,
-            one_time_keyboard=True,
-        )
         keyboard.add(*map(str, categories))
         await message.answer(output, reply_markup=keyboard)
 
     else:
         output = (
-            'У тебя нет ни одной категории.\n'
-            '/new_category - завести первую'
+            'У тебя нет ни одной категории.'
         )
-        await message.answer(output)
+
+        await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
 
 
 @dp.message_handler(state=DropCategoryGroup.name)
@@ -204,7 +227,7 @@ async def cmd_drop_category_start(
     )
 
     await state.finish()
-    await message.answer(output)
+    await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
 
 
 @dp.message_handler(state=DropCategoryGroup.confirm)
@@ -226,17 +249,152 @@ async def cmd_drop_category_confirm(
         )
         await state.finish()
         await database.drop_category(user, candidate)
-        await message.answer(output)
+        await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
 
     elif message.text == 'Нет':
         output = (
             'Не будем удалять категорию'
         )
         await state.finish()
-        await message.answer(output)
+        await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
 
     else:
         output = (
             'Ну так да или нет?'
         )
+        await message.answer(output)
+
+
+# =============================================================================
+
+
+class RenameCategoryGroup(StatesGroup):
+    """FSM for category rename."""
+    name = State()
+    new_name = State()
+    confirm = State()
+
+
+@dp.message_handler(commands='Переименовать_категорию')
+@user_middleware
+@database_middleware
+async def cmd_rename_category(
+        message: types.Message,
+        user: models.User,
+        database: Database,
+) -> None:
+    """Rename existing category."""
+    categories = await database.get_categories(user)
+    keyboard = types.ReplyKeyboardMarkup(
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+    if categories:
+        output = (
+            f'Выбери категорию, которую хочешь переименовать:'
+        )
+        await RenameCategoryGroup.name.set()
+        keyboard.add(*map(str, categories))
+        await message.answer(output, reply_markup=keyboard)
+
+    else:
+        output = (
+            'У тебя нет ни одной категории.'
+        )
+
+        await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
+
+
+@dp.message_handler(state=RenameCategoryGroup.name)
+@user_middleware
+@database_middleware
+async def cmd_rename_category_start(
+        message: types.Message,
+        state: FSMContext,
+        user: models.User,
+        database: Database,
+) -> None:
+    """Get deletion candidate."""
+    categories = await database.get_categories(user)
+    candidate = message.text
+
+    if candidate not in map(str, categories):
+        output = (
+            'Это не похоже на имя категории. Введи название из списка.'
+        )
+        await message.reply(output)
+        return
+
+    await RenameCategoryGroup.new_name.set()
+
+    output = (
+        'Введи новое имя для категории'
+    )
+    await state.update_data(candidate=candidate)
+    await message.answer(output)
+
+
+@dp.message_handler(
+    lambda message: len(message.text) > MAX_CATEGORY_NAME_LENGTH,
+    state=RenameCategoryGroup.new_name,
+)
+async def cmd_rename_category_name_too_long(message: types.Message):
+    """Category name is too long."""
+    output = (
+        f'Выбери название покороче (максимум {MAX_CATEGORY_NAME_LENGTH} симв.)'
+    )
+    return await message.reply(output)
+
+
+@dp.message_handler(state=RenameCategoryGroup.new_name)
+async def cmd_rename_category_new_name(
+        message: types.Message,
+        state: FSMContext,
+) -> None:
+    """Enter new name for category."""
+    data = await state.get_data()
+    candidate = data['candidate']
+    new_name = utils.sanitize_user_input(message.text)
+    await state.update_data(new_name=new_name)
+
+    keyboard = types.ReplyKeyboardMarkup(
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+    keyboard.add('Да', 'Нет')
+    output = (
+        f"Переименовываем {candidate} в {new_name}?"
+    )
+    await RenameCategoryGroup.confirm.set()
+    await message.answer(output, reply_markup=keyboard)
+
+
+@dp.message_handler(state=RenameCategoryGroup.confirm)
+@user_middleware
+@database_middleware
+async def cmd_rename_category_confirm(
+        message: types.Message,
+        state: FSMContext,
+        user: models.User,
+        database: Database,
+) -> None:
+    """Confirm deletion of category."""
+    data = await state.get_data()
+    candidate = data['candidate']
+    new_name = data['new_name']
+
+    if message.text == 'Да':
+        output = (
+            f'Переименовал {candidate} в {new_name}'
+        )
+        await state.finish()
+        await database.rename_category(user, candidate, new_name)
+        await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
+
+    else:
+        output = (
+            'Выбери другое название'
+        )
+        await RenameCategoryGroup.new_name.set()
         await message.answer(output)
