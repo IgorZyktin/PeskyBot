@@ -13,6 +13,31 @@ from pesky.storage.database.database import Database
 LOG = infra.get_logger(__name__)
 
 
+@dp.message_handler(commands='Категории')
+async def cmd_categories(message: types.Message) -> None:
+    """Entry point for categories."""
+    keyboard = types.ReplyKeyboardMarkup(
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+    keyboard.add(
+        '/Показать_категории',
+        '/Новая_категория',
+        '/Переименовать_категорию',
+        '/Удалить_категорию',
+    )
+
+    output = (
+        'Здесь можно настроить категории.'
+    )
+
+    await message.answer(output, reply_markup=keyboard)
+
+
+# =============================================================================
+
+
 @dp.message_handler(commands='list_categories')
 @user_middleware
 @database_middleware
