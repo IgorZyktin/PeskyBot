@@ -12,6 +12,15 @@ from pesky.storage.database.database import Database
 
 LOG = infra.get_logger(__name__)
 
+DEFAULT_KEYBOARD = types.ReplyKeyboardMarkup(
+    resize_keyboard=True,
+    one_time_keyboard=True,
+)
+
+DEFAULT_KEYBOARD.add(
+    '/Категории',
+)
+
 
 @dp.message_handler(commands='start')
 @user_middleware
@@ -33,7 +42,7 @@ async def cmd_start(
         LOG.info('Registered new user: %s, %s', user.id, user.first_name)
         output += '\nРад знакомству!'
 
-    await message.answer(output)
+    await message.answer(output, reply_markup=DEFAULT_KEYBOARD)
 
 
 @dp.message_handler(commands='help')
