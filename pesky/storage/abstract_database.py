@@ -37,9 +37,19 @@ class AbstractDatabase(abc.ABC):
     ) -> bool:
         """Return True if category has records."""
 
+    @abc.abstractmethod
     async def drop_category(
             self,
             user: models.User,
             name: str,
     ) -> None:
         """Delete category."""
+
+    @abc.abstractmethod
+    async def rename_category(
+            self,
+            user: models.User,
+            original_name: str,
+            new_name: str,
+    ) -> None:
+        """Rename category."""

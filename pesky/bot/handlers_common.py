@@ -5,21 +5,14 @@ from aiogram import types
 from aiogram.utils import exceptions
 
 from pesky import infra
-from pesky.bot.dependencies import dp, user_middleware, database_middleware
+from pesky.bot.dependencies import (
+    dp, user_middleware, database_middleware, DEFAULT_KEYBOARD,
+)
 from pesky.domain import models
 from pesky.storage import operations
 from pesky.storage.database.database import Database
 
 LOG = infra.get_logger(__name__)
-
-DEFAULT_KEYBOARD = types.ReplyKeyboardMarkup(
-    resize_keyboard=True,
-    one_time_keyboard=True,
-)
-
-DEFAULT_KEYBOARD.add(
-    '/Категории',
-)
 
 
 @dp.message_handler(commands='start')
@@ -59,6 +52,12 @@ async def cmd_help(message: types.Message):
         '/help - показать справку'
     )
     await message.answer(output)
+
+
+@dp.message_handler(commands='Отмена')
+async def cmd_cancel(message: types.Message):
+    """Default cancel handler."""
+    await message.answer('/Отмена', reply_markup=DEFAULT_KEYBOARD)
 
 
 @dp.errors_handler(exception=exceptions.BotBlocked)

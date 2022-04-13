@@ -111,3 +111,20 @@ class Database(AbstractDatabase):
                 del data['categories'][user.sid][key]
 
         self._write(data)
+
+    async def rename_category(
+            self,
+            user: models.User,
+            original_name: str,
+            new_name: str,
+    ) -> None:
+        """Rename category."""
+        data = self._read()
+
+        if user.sid in data['categories']:
+            for cat_id, model in data['categories'][user.sid].items():
+                if model['name'] == original_name:
+                    model['name'] = new_name
+                    break
+
+        self._write(data)
